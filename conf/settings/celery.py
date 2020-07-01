@@ -1,0 +1,30 @@
+from decouple import config
+from utils.celery.env_router import EnvRouter
+
+
+ENVIRONMENT = config('ENVIRONMENT')
+
+BROKER_URL = config('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND')
+
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERYD_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_CREATE_MISSING_QUEUES = True
+
+CELERY_TIMEZONE = 'Europe/Moscow'
+CELERY_ENABLE_UTC = False
+
+BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 3600 * 24}
+
+# В тестах запускаем таски без брокера
+if ENVIRONMENT == 'test':
+    BROKER_URL = None
+    CELERY_RESULT_BACKEND = None
+    CELERY_ALWAYS_EAGER = True
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+
+CELERY_ROUTES = (EnvRouter(),)
+
+CELERY_REDIRECT_STDOUTS_LEVEL = 'INFO'

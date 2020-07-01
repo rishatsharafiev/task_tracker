@@ -1,0 +1,79 @@
+version: "3.7"
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres:
+  redis:
+
+services:
+  redis:
+    build: ./redis
+    volumes:
+      - redis:/data
+    networks:
+      - backend
+
+  postgres:
+    build: ./postgres
+    volumes:
+      - postgres:/var/lib/postgresql/data:cached
+    ports:
+      - "${POSTGRES_EXTERNAL_PORT}:5432"
+    networks:
+      - backend
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata/
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+
+  app:
+    build:
+      context: ../
+      dockerfile: devops/app/Dockerfile
+    volumes:
+      - ../:/app
+      - /tmp/task_tracker:/tmp
+    networks:
+      - backend
+    depends_on:
+      - postgres
+      - redis
+    command: ./manage.py runserver 0.0.0.0:8080
+    ports:
+      - ${APP_EXTERNAL_PORT}:8080
+    env_file: .env
+
+  celery:
+    build:
+      context: ../
+      dockerfile: devops/app/Dockerfile
+    volumes:
+      - ../:/app
+      - /tmp/task_tracker:/tmp
+    networks:
+      - backend
+    depends_on:
+      - postgres
+      - redis
+    command: bash -c "./manage.py migrate && celery worker -A conf -Q default -l info"
+    env_file: .env
+
+  ci-tests:
+    build:
+      context: ../
+      dockerfile: devops/app/Dockerfile
+    volumes:
+      - ../:/app
+    networks:
+      - backend
+    depends_on:
+      - postgres
+      - redis
+    command: pytest --create-db -n 3
+    env_file: .env
+    environment:
+      - CI_TESTS=true

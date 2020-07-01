@@ -1,0 +1,15 @@
+.idea
+*.pyc
+.DS_Store
+.vscode
+celerybeat-schedule
+venv
+*.pid
+.env
+*.log
+.coverage
+htmlcov
+__pycache__/
+static/
+media/
+.pytest_cache/
